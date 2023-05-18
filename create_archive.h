@@ -20,4 +20,6 @@ typedef struct header {
     char prefix[155]; /* NULL-terminated if NULL fits */
 } header;
 
+header* create_header(struct stat* file_stat);
+
 #endif
