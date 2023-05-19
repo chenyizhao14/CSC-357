@@ -1,6 +1,13 @@
 #ifndef __CREATE_ARCHIVE_H__
 #define __CREATE_ARCHIVE_H__
 
+#define NAME_SIZE 100;
+#define MODE_SIZE 8;
+#define UID_SIZE 8;
+#define GID_SIZE 8;
+#define SIZE_SIZE 12;
+
+
 typedef struct header {
     char name[100]; /* NULL-terminated if NULL fits */
     char mode[8];
@@ -18,8 +25,8 @@ typedef struct header {
     char devmajor[8];
     char devminor[8];
     char prefix[155]; /* NULL-terminated if NULL fits */
-} header;
+} Header;
 
-header* create_header(struct stat* file_stat);
+Header* create_header(struct stat* file_stat);
 
 #endif
