@@ -1,5 +1,5 @@
-#ifndef __CREATE_ARCHIVE_H__
-#define __CREATE_ARCHIVE_H__
+#ifndef CREATEARCHIVE_H
+#define CREATEARCHIVE_H
 
 #define NAME_SIZE 100
 #define MODE_SIZE 8
@@ -23,7 +23,7 @@
 #define DIRECTORY_TYPE '5'
 
 
-typedef struct header {
+typedef struct file_header {
     char name[100]; /* NULL-terminated if NULL fits */
     char mode[8];
     char uid[8];

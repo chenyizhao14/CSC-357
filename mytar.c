@@ -1,13 +1,28 @@
-/* include <arpa/inet.h> */
-#include <winsock2.h>
-#include <string.h>
-#include <stdlib.h>
+#include <arpa/inet.h>
+/* #include <winsock2.h> */
 #include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+#include <limits.h>
+#include <sys/types.h>
+
+#include "create_archive.h"
 
 #define BLOCK_SIZE 512
 
 int main(int argc, char* argv[]) {
+    DIR* dir;
+    struct dirent* entry; 
+    Header* header;
     char* file_name = argv[1];
-    struct dirent* entry = 
-    create_header();
+    if ((dir = opendir(file_name)) == NULL) {
+		fprintf(stderr, "cannot get current directory");
+		exit(EXIT_FAILURE);
+	}
+    entry = readdir(dir);
+    header = create_header(entry);
+    return 0;
 }

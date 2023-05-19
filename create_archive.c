@@ -1,4 +1,3 @@
-#include "create_archive.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -7,6 +6,10 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+
+#include "create_archive.h"
 
 Header* create_header(struct dirent* file_entry) {
     int i;
@@ -25,7 +28,7 @@ Header* create_header(struct dirent* file_entry) {
         exit(EXIT_FAILURE);
     }
 
-    lstat(file_name, file_stat); /* stat the file to get info*/
+    stat(file_entry -> d_name, file_stat); /* stat the file to get info*/
     
     /*------NAME---------*/
 
@@ -71,7 +74,7 @@ Header* create_header(struct dirent* file_entry) {
         (header -> typeflag)[0] = SYM_LINK_TYPE; /* typeflag = 2 */
         strcpy(header -> size, "000000000000"); /* size of symlinks is 0 */
         /* if symlink, set linkname to value of it*/
-        linkname_len = readlink(file_name, header -> linkname, file_name, LINKNAME_SIZE);
+        linkname_len = readlink(file_name, header -> linkname, LINKNAME_SIZE);
         if(linkname_len < LINKNAME_SIZE) {
             (header -> linkname)[linkname_len - 1] = '\0'; /* add null terminator if there's space*/
         }
@@ -103,27 +106,4 @@ Header* create_header(struct dirent* file_entry) {
     /*----------DEVMINOR------------*/
     d_minor = minor(file_stat->st_dev);
     sprintf(header->devminor, "%08o", d_minor);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
