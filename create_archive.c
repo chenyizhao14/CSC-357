@@ -25,7 +25,7 @@ Header* create_header(struct dirent* file_entry) {
         exit(EXIT_FAILURE);
     }
 
-    stat(file_name, file_stat); /* stat the file to get info*/
+    lstat(file_name, file_stat); /* stat the file to get info*/
     
     /*------NAME---------*/
 
@@ -36,29 +36,30 @@ Header* create_header(struct dirent* file_entry) {
 
     /* if file name doesn't fit in header name, put overflow into prefix*/
     if(strlen(file_name) > NAME_SIZE) {
-        strncpy(header -> name, file_name, NAME_SIZE); /* put 1st 100 chars into name */
-        for(i = 0; i < strlen(file_name) - NAME_SIZE; i++) { 
-            /* put overflow into prefix char by char */
-            (header -> prefix)[i] = file_name[NAME_SIZE + i];
+        int start = strlen(file_name) - NAME_SIZE;
+        int pointer;
+        /* start looping through name from 100 from the end */
+        for(i = start; i < strlen(file_name); i++) {
+            if(file_name[i] == '/') {
+                pointer = i; /* index of the slash*/
+            }
         }
+        strncpy(header -> name, file_name + (pointer + 1), NAME_SIZE); /* put last 100 chars into name */
+        strncpy(header -> prefix, file_name, pointer); /* put chars before slash  */
     }
 
     /*--------MODE----------*/
-    sprintf(header -> mode, "%07o", file_stat -> st_mode); /* print mode into header */
-    (header -> mode)[7] = "\0";
+    sprintf(header -> mode, "%08o", file_stat -> st_mode); /* print mode into header */
 
     /*-------UID AND GID ------*/
-    sprintf(header -> uid, "%07o", file_stat -> st_uid);
-    sprintf(header -> gid, "%07o", file_stat -> st_gid);
-    (header -> uid)[7] = "\0";
-    (header -> gid)[7] = "\0";
+    sprintf(header -> uid, "%08o", file_stat -> st_uid);
+    sprintf(header -> gid, "%08o", file_stat -> st_gid);
 
     /*-------SIZE------*/
     sprintf(header -> size, "%011o", file_stat -> st_size);
 
     /*-------MTIME------*/
-    sprintf(header -> mtime, "%011o", file_stat -> st_mtime);
-    (header -> mtime)[11] = "\0";
+    sprintf(header -> mtime, "%012o", file_stat -> st_mtime);
 
     /*------CHKSUM ------*/
 
