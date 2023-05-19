@@ -11,9 +11,13 @@
 Header* create_header(struct dirent* file_entry) {
     int i;
     int linkname_len;
-    char *uname, *gname
     struct stat* file_stat;
     char* file_name = file_entry -> d_name;
+    struct passwd* u_name;
+    struct group* g_name;
+    int d_major;
+    int d_minor;
+
 
     Header *header = (Header *)malloc(sizeof(Header));
     if(header == NULL) {
@@ -32,7 +36,7 @@ Header* create_header(struct dirent* file_entry) {
 
     /* if file name doesn't fit in header name, put overflow into prefix*/
     if(strlen(file_name) > NAME_SIZE) {
-        strncpy(header -> name, file_name, NAME_SIZE) /* put 1st 100 chars into name */
+        strncpy(header -> name, file_name, NAME_SIZE); /* put 1st 100 chars into name */
         for(i = 0; i < strlen(file_name) - NAME_SIZE; i++) { 
             /* put overflow into prefix char by char */
             (header -> prefix)[i] = file_name[NAME_SIZE + i];
@@ -53,7 +57,7 @@ Header* create_header(struct dirent* file_entry) {
     sprintf(header -> size, "%011o", file_stat -> st_size);
 
     /*-------MTIME------*/
-    sprintf(header -> mtime, "%011o", file_stat -> st_mtimespec);
+    sprintf(header -> mtime, "%011o", file_stat -> st_mtime);
     (header -> mtime)[11] = "\0";
 
     /*------CHKSUM ------*/
@@ -84,17 +88,21 @@ Header* create_header(struct dirent* file_entry) {
 
     /*----------UNAME------------*/
     /* translate uid into name and gid into name*/
-    uname = getpwuid(file_stat -> st_uid);
-    strcpy(header -> uname, uname);
+    u_name = getpwuid(file_stat -> st_uid);
+    strcpy(header -> uname, u_name->pw_name);
 
     /*----------GNAME------------*/
-    gname = getgrgid(file_stat -> st_gid);
-    strcpy(header -> gname, gname);
+    g_name = getgrgid(file_stat -> st_gid);
+    strcpy(header -> gname, g_name->gr_name);
 
     /*----------DEVMAJOR------------*/
-
+    d_major = major(file_stat->st_dev);
+    sprintf(header->devmajor, "%08o", d_major);
 
     /*----------DEVMINOR------------*/
+    d_minor = minor(file_stat->st_dev);
+    sprintf(header->devminor, "%08o", d_minor);
+
 
 
 
