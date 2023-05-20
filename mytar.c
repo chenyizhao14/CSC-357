@@ -11,8 +11,6 @@
 
 #include "create_archive.h"
 
-#define BLOCK_SIZE 512
-
 int main(int argc, char* argv[]) {
     DIR* dir;
     struct dirent* entry; 

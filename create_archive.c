@@ -11,15 +11,17 @@
 
 #include "create_archive.h"
 
-Header* create_header(struct dirent* file_entry) {
+Header* create_header(char *file_name, struct dirent* file_entry) {
     int i;
     int linkname_len;
-    struct stat* file_stat;
-    char* file_name = file_entry -> d_name;
+    struct stat file_stat;
+    // char* file_name = file_entry -> d_name;
     struct passwd* u_name;
     struct group* g_name;
     int d_major;
     int d_minor;
+    int checksum;
+    char* ptr;
 
 
     Header *header = (Header *)malloc(sizeof(Header));
@@ -28,7 +30,10 @@ Header* create_header(struct dirent* file_entry) {
         exit(EXIT_FAILURE);
     }
 
-    stat(file_entry -> d_name, file_stat); /* stat the file to get info*/
+    if (stat(file_entry -> d_name, &file_stat) == -1) { /* stat the file to get info*/
+        perror("stat failed");
+        exit(EXIT_FAILURE);
+    }
     
     /*------NAME---------*/
 
@@ -39,8 +44,8 @@ Header* create_header(struct dirent* file_entry) {
 
     /* if file name doesn't fit in header name, put overflow into prefix*/
     if(strlen(file_name) > NAME_SIZE) {
-        int start = strlen(file_name) - NAME_SIZE;
-        int pointer;
+        int start = strlen(file_name) - 1 - NAME_SIZE;
+        int pointer = start;
         /* start looping through name from 100 from the end */
         for(i = start; i < strlen(file_name); i++) {
             if(file_name[i] == '/') {
@@ -52,25 +57,33 @@ Header* create_header(struct dirent* file_entry) {
     }
 
     /*--------MODE----------*/
-    sprintf(header -> mode, "%08o", file_stat -> st_mode); /* print mode into header */
+    sprintf(header -> mode, "%08o", file_stat.st_mode); /* print mode into header */
 
     /*-------UID AND GID ------*/
-    sprintf(header -> uid, "%08o", file_stat -> st_uid);
-    sprintf(header -> gid, "%08o", file_stat -> st_gid);
+    sprintf(header -> uid, "%08o", file_stat.st_uid);
+    sprintf(header -> gid, "%08o", file_stat.st_gid);
 
     /*-------SIZE------*/
-    sprintf(header -> size, "%011o", file_stat -> st_size);
+    sprintf(header -> size, "%011o", file_stat.st_size);
 
     /*-------MTIME------*/
-    sprintf(header -> mtime, "%012o", file_stat -> st_mtime);
+    sprintf(header -> mtime, "%012o", file_stat.st_mtime);
 
     /*------CHKSUM ------*/
+    for (i = 0; i < BLOCK_SIZE; i++) {
+        checksum += *ptr;
+        ptr++;
+    }
+
+    /* Adds eight spaces */
+    checksum += ' ' * CHKSUM_SIZE;
+    sprintf(header->chksum, "%07o", checksum);
 
     /*------FILETYPE, size for symlinks and dirs, linkname ------*/
-    if(S_ISREG(file_stat -> st_mode)) {
+    if(S_ISREG(file_stat.st_mode)) {
         (header -> typeflag)[0] = REG_FILE_TYPE; /* typeflag = 0 */
     }
-    else if(S_ISLNK(file_stat -> st_mode)) {
+    else if(S_ISLNK(file_stat.st_mode)) {
         (header -> typeflag)[0] = SYM_LINK_TYPE; /* typeflag = 2 */
         strcpy(header -> size, "000000000000"); /* size of symlinks is 0 */
         /* if symlink, set linkname to value of it*/
@@ -79,7 +92,7 @@ Header* create_header(struct dirent* file_entry) {
             (header -> linkname)[linkname_len - 1] = '\0'; /* add null terminator if there's space*/
         }
     }
-    else if(S_ISDIR(file_stat -> st_mode)) {
+    else if(S_ISDIR(file_stat.st_mode)) {
         (header -> typeflag)[0] = DIRECTORY_TYPE; /* typeflag = 5 */
         strcpy(header -> size, "000000000000"); /* size of directory is 0 */
     }
@@ -92,18 +105,18 @@ Header* create_header(struct dirent* file_entry) {
 
     /*----------UNAME------------*/
     /* translate uid into name and gid into name*/
-    u_name = getpwuid(file_stat -> st_uid);
+    u_name = getpwuid(file_stat.st_uid);
     strcpy(header -> uname, u_name->pw_name);
 
     /*----------GNAME------------*/
-    g_name = getgrgid(file_stat -> st_gid);
+    g_name = getgrgid(file_stat.st_gid);
     strcpy(header -> gname, g_name->gr_name);
 
     /*----------DEVMAJOR------------*/
-    d_major = major(file_stat->st_dev);
+    d_major = major(file_stat.st_dev);
     sprintf(header->devmajor, "%08o", d_major);
 
     /*----------DEVMINOR------------*/
-    d_minor = minor(file_stat->st_dev);
+    d_minor = minor(file_stat.st_dev);
     sprintf(header->devminor, "%08o", d_minor);
 }

@@ -17,6 +17,7 @@
 #define DEVMAJOR_SIZE 8
 #define DEVMINOR_SIZE 8
 #define PREFIX_SIZE 155
+#define BLOCK_SIZE 512
 
 #define REG_FILE_TYPE '0'
 #define SYM_LINK_TYPE '2'
@@ -42,6 +43,6 @@ typedef struct file_header {
     char prefix[155]; /* NULL-terminated if NULL fits */
 } Header;
 
-Header* create_header(struct dirent* file_entry);
+Header* create_header(char* path_name, struct dirent* file_entry);
 
 #endif
