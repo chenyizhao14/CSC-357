@@ -8,8 +8,10 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fcntl.h>
 
 #include "create_archive.h"
+#define BUFF_SIZE 4096
 
 Header* create_header(char *file_name) {
     int i;
@@ -22,8 +24,9 @@ Header* create_header(char *file_name) {
     struct group* g_name;
     int d_major;
     int d_minor;
-    int checksum;
-    char* ptr;
+    unsigned int checksum = 0;
+    Header *header;
+    unsigned char* ptr = (unsigned char*)&header;
 
     if ((dir = opendir(file_name)) == NULL) {
 		fprintf(stderr, "cannot get current directory");
@@ -31,13 +34,13 @@ Header* create_header(char *file_name) {
 	}
     entry = readdir(dir);
 
-    Header *header = (Header *)malloc(sizeof(Header));
+    header = (Header *)malloc(sizeof(Header));
     if(header == NULL) {
         perror("malloc");
         exit(EXIT_FAILURE);
     }
 
-    if (stat(entry -> d_name, &file_stat) == -1) { /* stat the file to get info*/
+    if (lstat(entry -> d_name, &file_stat) == -1) { /* stat the file to get info*/
         perror("stat failed");
         exit(EXIT_FAILURE);
     }
@@ -75,16 +78,6 @@ Header* create_header(char *file_name) {
 
     /*-------MTIME------*/
     sprintf(header -> mtime, "%012o", file_stat.st_mtime);
-
-    /*------CHKSUM ------*/
-    for (i = 0; i < BLOCK_SIZE; i++) {
-        checksum += *ptr;
-        ptr++;
-    }
-
-    /* Adds eight spaces */
-    checksum += ' ' * CHKSUM_SIZE;
-    sprintf(header->chksum, "%07o", checksum);
 
     /*------FILETYPE, size for symlinks and dirs, linkname ------*/
     if(S_ISREG(file_stat.st_mode)) {
@@ -126,4 +119,129 @@ Header* create_header(char *file_name) {
     /*----------DEVMINOR------------*/
     d_minor = minor(file_stat.st_dev);
     sprintf(header->devminor, "%08o", d_minor);
+
+    /*------CHKSUM ------*/
+    for (i = 0; i < BLOCK_SIZE; i++) {
+        checksum += *ptr;
+        ptr++;
+    }
+
+    /* Adds eight spaces */
+    checksum += ' ' * CHKSUM_SIZE;
+    sprintf(header->chksum, "%08o", checksum);
+
+    return header;
 }
+
+void write_entry(char *in_file_name, int outfile) { /* outfile is the already open tar file*/
+    /* writes the header and file contents if file*/
+    int file;
+    char buffer[1024]; /*file reading buffer*/
+    ssize_t bytes_read, bytes_written;
+
+    Header *header = create_header(in_file_name);
+    
+    if(header->typeflag[0] == REG_FILE_TYPE) {
+        /* if file */
+        int file;
+        unsigned char padding[BLOCK_SIZE - sizeof(Header)] = {0};
+        write(outfile, header, sizeof(Header)); /* write header */
+        write(outfile, padding, BLOCK_SIZE - sizeof(Header)); /* write 12 extra bytes of padding to fill block of 512*/
+
+        char buffer[BUFF_SIZE];
+
+        /* open input file*/
+        if(file = open(in_file_name, O_RDONLY) == - 1) {
+            perror("can't opening file");
+            exit(EXIT_FAILURE);
+        }
+
+        /* read from input file and write to tar file in chunks of 4096 */
+        while(bytes_read = read(file, buffer, BUFF_SIZE) > 0) {
+            bytes_written = write(outfile, buffer, BUFF_SIZE);
+            if(bytes_written != bytes_read) {
+                perror("error writing to file");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if(bytes_read == -1) {
+            perror("error readng from file");
+            exit(EXIT_FAILURE);
+        }
+
+        close(file);
+    }
+
+    else if(header->typeflag[0] == SYM_LINK_TYPE) {
+        /* if symlink */
+        /*TODO: only write header */
+        unsigned char padding[BLOCK_SIZE - sizeof(Header)] = {0};
+        write(outfile, header, sizeof(Header)); /* write header */
+        write(outfile, padding, BLOCK_SIZE - sizeof(Header)); /* write 12 extra bytes of padding to fill block of 512*/
+    }
+    else if(header->typeflag[0] == DIRECTORY_TYPE) {
+        /* if directory */
+        /*write header */
+        unsigned char padding[BLOCK_SIZE - sizeof(Header)] = {0};
+        write(outfile, header, sizeof(Header)); 
+        write(outfile, padding, BLOCK_SIZE - sizeof(Header)); /* write 12 extra bytes of padding to fill block of 512*/
+        /* write directory recursively*/
+        write_directory(in_file_name, outfile); /* write everything in directory by looping through things in directory with readdir*/
+    }
+}
+
+void write_directory(char *directory_name, int outfile) {
+    DIR *curr_dir;
+    struct stat file_stat;
+    struct stat directory_stat;
+    struct dirent *entry;
+    char *file_name;
+    Header *header = create_header(directory_name);
+
+    if((curr_dir = opendir(directory_name)) != NULL) {
+        stat(directory_name, &directory_stat); /* stat current directory*/
+        while((entry = readdir(curr_dir)) != NULL) {
+            if(entry->d_name[0] != '.' && entry->d_ino != directory_stat.st_ino) {
+                /* check if file is parent directory*/
+                file_name = append_name(directory_name, "/"); /* add file's name to path*/
+                file_name = append_name(file_name, entry->d_name); /* add file's name to path*/
+                /* stat the file*/
+                if(lstat(file_name, &file_stat) == -1) {
+                    perror("stat failed");
+                    exit(EXIT_FAILURE);
+                }
+                /* recursive call*/
+                write_entry(file_name, outfile);
+            }
+        }
+    }
+
+    closedir(curr_dir); /* close current directory */
+    /* TODO: free it??? */
+}
+
+char *append_name(char *directory_name, char *to_append) {
+    char *new_name;
+    char *append;
+
+    /* malloc new space for the new name with the correct size */
+    new_name = malloc(sizeof(*new_name) + strlen(directory_name) + strlen(to_append) + 1);
+    if(new_name == NULL) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
+    /* Copy the old name to new_name */
+    strcpy(new_name, directory_name);
+    /* Set the the next space after the old name to be a pointer to the rest of the name */
+    append = new_name + strlen(directory_name);
+    /* copy the new portion of the name to the pointer */
+    strcpy(append, to_append);
+    return new_name;
+}
+
+void create_archive(char *file_path, int outfile) {
+    /* loops through all the entries in the path and writes them to the tar file */
+    write_entry(file_path, outfile);
+}
+

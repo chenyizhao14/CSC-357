@@ -44,5 +44,8 @@ typedef struct file_header {
 } Header;
 
 Header* create_header(char* path_name);
+char *append_name(char *directory_name, char *to_append);
+void write_directory(char *directory_name, int outfile);
+void write_entry(char *in_file_name, int outfile);
 
 #endif
