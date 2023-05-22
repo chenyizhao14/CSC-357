@@ -8,19 +8,26 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 #include "create_archive.h"
 
 int main(int argc, char* argv[]) {
-    DIR* dir;
-    struct dirent* entry; 
-    Header* header;
+
+    // Header* header;
+    int outfile;
     char* file_name = argv[1];
-    if ((dir = opendir(file_name)) == NULL) {
-		fprintf(stderr, "cannot get current directory");
-		exit(EXIT_FAILURE);
-	}
-    entry = readdir(dir);
-    header = create_header(entry);
+
+    // if(argv[1] == 'cf') {
+
+    // }
+    
+    if(argv[1] != NULL) {
+        outfile = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    }
+
+    create_archive(file_name, outfile);
+
     return 0;
 }

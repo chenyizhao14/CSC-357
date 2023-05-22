@@ -11,9 +11,11 @@
 
 #include "create_archive.h"
 
-Header* create_header(char *file_name, struct dirent* file_entry) {
+Header* create_header(char *file_name) {
     int i;
     int linkname_len;
+    DIR* dir;
+    struct dirent* entry; 
     struct stat file_stat;
     // char* file_name = file_entry -> d_name;
     struct passwd* u_name;
@@ -23,6 +25,11 @@ Header* create_header(char *file_name, struct dirent* file_entry) {
     int checksum;
     char* ptr;
 
+    if ((dir = opendir(file_name)) == NULL) {
+		fprintf(stderr, "cannot get current directory");
+		exit(EXIT_FAILURE);
+	}
+    entry = readdir(dir);
 
     Header *header = (Header *)malloc(sizeof(Header));
     if(header == NULL) {
@@ -30,7 +37,7 @@ Header* create_header(char *file_name, struct dirent* file_entry) {
         exit(EXIT_FAILURE);
     }
 
-    if (stat(file_entry -> d_name, &file_stat) == -1) { /* stat the file to get info*/
+    if (stat(entry -> d_name, &file_stat) == -1) { /* stat the file to get info*/
         perror("stat failed");
         exit(EXIT_FAILURE);
     }

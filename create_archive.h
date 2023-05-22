@@ -43,6 +43,6 @@ typedef struct file_header {
     char prefix[155]; /* NULL-terminated if NULL fits */
 } Header;
 
-Header* create_header(char* path_name, struct dirent* file_entry);
+Header* create_header(char* path_name);
 
 #endif
