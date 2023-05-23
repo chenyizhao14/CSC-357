@@ -31,13 +31,38 @@ Header* create_header(char *file_name) {
         perror("stat failed");
         exit(EXIT_FAILURE);
     }
-    
+
+    /*------FILETYPE, size for symlinks and dirs, linkname ------*/
+    if(S_ISREG(file_stat.st_mode)) {
+        (header -> typeflag)[0] = REG_FILE_TYPE; /* typeflag = 0 */
+    }
+    else if(S_ISLNK(file_stat.st_mode)) {
+        (header -> typeflag)[0] = SYM_LINK_TYPE; /* typeflag = 2 */
+        strcpy(header -> size, "00000000000"); /* size of symlinks is 0 */
+        /* if symlink, set linkname to value of it*/
+        linkname_len = 
+            readlink(file_name, header -> linkname, LINKNAME_SIZE);
+        if(linkname_len < LINKNAME_SIZE) {
+            /* add null terminator if there's space*/
+            (header -> linkname)[linkname_len - 1] = '\0'; 
+        }
+    }
+    else if(S_ISDIR(file_stat.st_mode)) {
+        (header -> typeflag)[0] = DIRECTORY_TYPE; /* typeflag = 5 */
+        strcpy(header -> size, "00000000000"); /* size of directory is 0 */
+    }
+
     /*------NAME---------*/
 
     /* if file name fits in header name (100 bytes),
      put whole thing in there */
     if(strlen(file_name) < NAME_SIZE) {
-        strcpy(header -> name, file_name); 
+        if (header->typeflag[0] == '5') {
+            file_name = append_name(file_name, "/");
+            strncpy(header -> name, file_name, strlen(file_name)); 
+        } else {
+            strncpy(header -> name, file_name, strlen(file_name)); 
+        }
     }
 
     /* if file name doesn't fit in header name, put overflow into prefix*/
@@ -80,26 +105,6 @@ Header* create_header(char *file_name) {
 
     /*-------MTIME------*/
     sprintf(header -> mtime, "%012o", file_stat.st_mtime);
-
-    /*------FILETYPE, size for symlinks and dirs, linkname ------*/
-    if(S_ISREG(file_stat.st_mode)) {
-        (header -> typeflag)[0] = REG_FILE_TYPE; /* typeflag = 0 */
-    }
-    else if(S_ISLNK(file_stat.st_mode)) {
-        (header -> typeflag)[0] = SYM_LINK_TYPE; /* typeflag = 2 */
-        strcpy(header -> size, "00000000000"); /* size of symlinks is 0 */
-        /* if symlink, set linkname to value of it*/
-        linkname_len = 
-            readlink(file_name, header -> linkname, LINKNAME_SIZE);
-        if(linkname_len < LINKNAME_SIZE) {
-            /* add null terminator if there's space*/
-            (header -> linkname)[linkname_len - 1] = '\0'; 
-        }
-    }
-    else if(S_ISDIR(file_stat.st_mode)) {
-        (header -> typeflag)[0] = DIRECTORY_TYPE; /* typeflag = 5 */
-        strcpy(header -> size, "00000000000"); /* size of directory is 0 */
-    }
 
     /*------MAGIC ------*/
     strcpy(header -> magic, "ustar");

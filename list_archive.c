@@ -123,8 +123,9 @@ int print_list(Header* header, char* file_name, int v_flag) {
 int list_archive(int argc, char* argv[], int v_flag) {
     FILE* archive;
     int success;
-    Header* header;
+    Header* header = (Header*)calloc(1, sizeof(Header));
     int i;
+    int counter = 0;
 
     /* the file name should be name_size + '/' + prefix_size + '\0 */
     char file_name[NAME_SIZE + PREFIX_SIZE + 2];
@@ -132,20 +133,38 @@ int list_archive(int argc, char* argv[], int v_flag) {
     archive = fopen(argv[2], "rb");
     memset(header, 0, BLOCK_SIZE);
 
-    while (read_header(archive, header)) {
-       obtain_name(file_name, header->prefix, header->name);
+    while (read_header(archive, header) >= 0) {
+        if(strlen(header->name) > 0) {
+            obtain_name(file_name, header->prefix, header->name);
 
-        if (argc == 3) {
-            success = print_list(header, file_name, v_flag);
-        } else {
-            for (i = 3; i < argc; i++) {
-                /* Check if current file is the same as the file passed */
-                if (compare_file_names(file_name, argv[i]) == 0) {
-                    /* If it is, print */
-                    success = print_list(header, file_name, v_flag);
+            if (argc == 3) {
+                success = print_list(header, file_name, v_flag);
+            } else {
+                for (i = 3; i < argc; i++) {
+                    /* Check if current file is the same as the file passed */
+                    if (compare_file_names(file_name, argv[i]) == 0) {
+                        /* If it is, print */
+                        success = print_list(header, file_name, v_flag);
+                    }
                 }
             }
+            int size = strtol(header->size, NULL, 8);
+            int distance;
+            if(size) {
+                distance = size / BLOCK_SIZE + 1;
+            }
+            else {
+                distance = 0;
+            }
+            // int distance = size ? size // BLOCK_SIZE + 1/: 0;
+            if(fseek(archive, distance * BLOCK_SIZE, SEEK_CUR) != 0) {
+                perror("fseek failed");
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            break;
         }
+
     }
     fclose(archive);
     return success;
