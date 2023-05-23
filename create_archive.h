@@ -1,18 +1,6 @@
 #ifndef CREATEARCHIVE_H
 #define CREATEARCHIVE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
-#include <fcntl.h>
-
 #define NAME_SIZE 100
 #define MODE_SIZE 8
 #define UID_SIZE 8
@@ -36,7 +24,7 @@
 #define DIRECTORY_TYPE '5'
 
 
-typedef struct file_header {
+typedef struct __attribute__ ((__packed__)) file_header {
     char name[100]; /* NULL-terminated if NULL fits */
     char mode[8];
     char uid[8];
@@ -57,7 +45,8 @@ typedef struct file_header {
 
 Header* create_header(char* path_name);
 char *append_name(char *directory_name, char *to_append);
-void write_directory(char *directory_name, int outfile);
-void write_entry(char *in_file_name, int outfile);
+void write_directory(char *directory_name, int outfile, int verbose);
+// void write_entry(char *in_file_name, int outfile, int verbose);
+void create_archive(char *file_path, int outfile, int verbose);
 
 #endif
