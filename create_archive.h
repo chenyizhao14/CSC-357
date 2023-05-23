@@ -1,6 +1,18 @@
 #ifndef CREATEARCHIVE_H
 #define CREATEARCHIVE_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <fcntl.h>
+
 #define NAME_SIZE 100
 #define MODE_SIZE 8
 #define UID_SIZE 8
