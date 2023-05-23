@@ -1,13 +1,13 @@
 CC=gcc
 
-CFLAGS=-Wall -ansi -Werror -pedantic -g
+CFLAGS=-g
 
 LDFLAGS=-lm
 
-all: extract create 
+HEADER = create_archive.h list_archive.h extract_archive.h special_int.h
 
-extract: extract_archive.c extract_archive.h create_archive.h
-	$(CC) $(CFLAGS) -o extract extract_archive.c create_archive.h $(LDFLAGS)
+MYTAR = mytar.c create_archive.c list_archive.c extract_archive.c special_int.c
 
-create: create_archive.c create_archive.h
-	$(CC) $(CFLAGS) -o create create_archive.c create_archive.h $(LDFLAGS)
+mytar: $(MYTAR) $(HEADER)
+	$(CC) $(CLFAGS) $(LDFLAGS) -o mytar $(MYTAR)
+

@@ -1,15 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
-#include <fcntl.h>
-
 #include "create_archive.h"
 #include "special_int.h"
 

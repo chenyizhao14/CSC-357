@@ -24,7 +24,7 @@ int extract_main(int argc, char* argv[], int v_flag, int S_flag){
     char file_name[NAME_SIZE + PREFIX_SIZE + 2];
 
     archive = fopen(argv[2], "rb");
-    memset(header, 0, BLOCK_SIZE);
+    memset(header, '\0', BLOCK_SIZE);
 
     while (read_header(archive, header) != 0) {
         obtain_name(file_name, header->prefix, header->name);
