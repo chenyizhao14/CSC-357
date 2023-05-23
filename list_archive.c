@@ -1,6 +1,13 @@
+#include <time.h>
+
 #include "list_archive.h"
 #include "create_archive.h"
 #include "extract_archive.h"
+
+#define PERMISSION_SIZE 10
+#define OWNER_GROUP_NAME 17
+#define SIZE 8
+#define MTIME_PRINT_SIZE 16
 
 /*For example:
 % mytar tvf archive.tar
@@ -10,8 +17,13 @@ drwx------ pnico/pnico 0 2010-11-02 13:49 Testdir/
 % */
 
 int print_list(Header* header, char* file_name, int v_flag) {
-    char perms[10] = {0};
+    char perms[PERMISSION_SIZE + 1] = {0};
     int permissions = strtol(header->mode, NULL, 8);
+    char o_g_name[OWNER_GROUP_NAME];
+    char* ptr = o_g_name;
+    time_t mtime = strtol(header->mtime, NULL, 8);
+    struct tm* time = NULL;
+    char mtime_buffer[MTIME_PRINT_SIZE + 1];
 
     if (v_flag == 0) {
         printf("%s\n", file_name);
@@ -69,7 +81,42 @@ int print_list(Header* header, char* file_name, int v_flag) {
         } else {
             perms[9] = '-';
         }
+
+    if (strlen(header->uname) > OWNER_GROUP_NAME) {
+        strncpy(o_g_name, header->uname, OWNER_GROUP_NAME);
+    } else {
+        strncpy(o_g_name, header->uname, strlen(header->uname));
+        ptr += strlen(header->uname);
+        *ptr = '/';
+        ptr++;
+
+        if(strlen(header->uname) + strlen(header->gname) < OWNER_GROUP_NAME) {
+            /* If the two names concatinated with a '/' 
+            is less than 17 char, copy to buffer */
+            strncpy(ptr, header->gname, strlen(header->gname));
+        } else {
+            /* If greater than 17, fill up as much of group name as possible */
+            strncpy(o_g_name, header->gname, 
+                OWNER_GROUP_NAME - strlen(header->gname));
+        }    
+        /* Get modifcation time for the file */
+        time = localtime(&mtime);
+        /* Put the times in a buffer */
+        sprintf(mtime_buffer, "%04i-%02i-%02i %02i:%02i",
+            1900 + (time->tm_year),
+            time->tm_mon + 1,
+            time->tm_mday,
+            time->tm_hour,
+            time->tm_min);
+
+        /* Print all the info out */
+        printf(
+            "%10s %-17s %8i %16s %s\n",
+            perms, o_g_name, strtol(header->size, NULL, 8), 
+            mtime_buffer, file_name);
+        }    
     }
+    
     return 0;
 }
 

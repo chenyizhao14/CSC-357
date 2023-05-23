@@ -59,6 +59,7 @@ char *append_name(char *directory_name, char *to_append);
 void write_directory(char *directory_name, int outfile, int verbose);
 // void write_entry(char *in_file_name, int outfile, int verbose);
 void create_archive(char *file_path, int outfile, int verbose);
+int calc_chksum(char* ptr);
 
 
 #endif

@@ -24,7 +24,7 @@ int extract_main(int argc, char* argv[], int v_flag, int S_flag){
     char file_name[NAME_SIZE + PREFIX_SIZE + 2];
 
     archive = fopen(argv[2], "rb");
-    memset(header, '\0', BLOCK_SIZE);
+    memset(header, 0, BLOCK_SIZE);
 
     while (read_header(archive, header) != 0) {
         obtain_name(file_name, header->prefix, header->name);
@@ -159,11 +159,15 @@ int extract_file(char* file_name, FILE* archive, Header* header) {
         if (feof(archive)) {
             break;
         } else {
-            fwrite(buffer, BLOCK_SIZE, 1, output_file);
-            current_size += BLOCK_SIZE;
+            if (current_size + BLOCK_SIZE > file_size) {
+                break;
+            } else {
+                fwrite(buffer, BLOCK_SIZE, 1, output_file);
+                current_size += BLOCK_SIZE;
 
-            /* reset buffer to NULL */
-            memset(buffer, 0, BLOCK_SIZE);
+                /* reset buffer to NULL */
+                memset(buffer, 0, BLOCK_SIZE);
+            }
         }
     }
 
@@ -181,17 +185,17 @@ int extract_file(char* file_name, FILE* archive, Header* header) {
 
 void obtain_name(char* buffer, char* prefix, char* name) {
     /* if there is no prefix, the name is just the name */
-    if (strlen(prefix) == 0) {
+    if (strlen(name) == 0) {
+        buffer[0] = '\0';
+    } else if (strlen(prefix) == 0) {
         strncpy(buffer, name, strlen(name));
         buffer[strlen(name)] = '\0';
-
     } else {
         /* if there is prefix, prefix '/' then name */
         strncpy(buffer, prefix, strlen(prefix));
         buffer[strlen(prefix)] = '/';
         strncpy((buffer + strlen(prefix) + 1), name, strlen(name));
         buffer[strlen(name) + strlen(prefix) + 1] = '\0';
-
     }
 }
 

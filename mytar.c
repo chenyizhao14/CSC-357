@@ -41,6 +41,11 @@ int main(int argc, char* argv[]) {
     create_archive(file_name, outfile);
     */
 
+    if (argc == 0) {
+        fprintf(stderr, "No arguments\n");
+        exit(EXIT_FAILURE);
+    }
+
     for (i = 0; i < strlen(options); i++) {
         if (options[i] == 'x') {
             x = 1;
@@ -62,10 +67,10 @@ int main(int argc, char* argv[]) {
     }
 
     if (!(x) && !(c) && !(t)) {
-        printf("invalid 2nd argument");
+        fprintf(stderr, "invalid 2nd argument \n");
     }
     if (!(f)) {
-        printf("Missing f in 2nd argument");
+        fprintf(stderr, "Missing f in 2nd argument\n");
         exit(EXIT_FAILURE);
     }
 
@@ -74,10 +79,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (c) {
-        char* file_name = argv[3];
+        file_name = argv[3];
         
-        if(argv[2] != NULL) {
-            outfile = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 
+        if(argv[2] == NULL) {
+            fprintf(stderr, "no tarfile");
+            exit(EXIT_FAILURE);
+        } else if (argv[2] != NULL){
+            outfile = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 
             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         }
         
@@ -86,6 +94,10 @@ int main(int argc, char* argv[]) {
     }
 
     if (t) {
+        if (!strstr(argv[2], ".tar")) {
+            fprintf(stderr, "Passed file is not a .tar\n");
+            exit(EXIT_FAILURE);
+        }
         list_archive(argc, argv, v_flag);
     }
 

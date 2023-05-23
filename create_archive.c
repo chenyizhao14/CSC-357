@@ -3,6 +3,9 @@
 
 #define BUFF_SIZE 4096
 
+#define CHECKSUM_START 148
+#define CHECKSUM_END 155
+
 Header* create_header(char *file_name) {
     int i;
     int linkname_len;
@@ -73,7 +76,7 @@ Header* create_header(char *file_name) {
     sprintf(header -> gid, "%08o", file_stat.st_gid);
 
     /*-------SIZE------*/
-    sprintf(header -> size, "%011o", file_stat.st_size);
+    sprintf(header -> size, "%011lo", file_stat.st_size);
 
     /*-------MTIME------*/
     sprintf(header -> mtime, "%012o", file_stat.st_mtime);
@@ -124,13 +127,7 @@ Header* create_header(char *file_name) {
     sprintf(header->devminor, "\0\0\0\0\0\0\0", d_minor);
 
     /*------CHKSUM ------*/
-    for (i = 0; i < BLOCK_SIZE; i++) {
-        checksum += *ptr;
-        ptr++;
-    }
-
-    /* Adds eight spaces */
-    checksum += ' ' * CHKSUM_SIZE;
+    checksum = calc_chksum(ptr);
     sprintf(header->chksum, "%07o", checksum);
 
     return header;
@@ -274,9 +271,25 @@ char *append_name(char *directory_name, char *to_append) {
     return new_name;
 }
 
+int calc_chksum(char* ptr) {
+    int checksum = 0;
+    int i;
+
+    for (i = 0; i < (sizeof(Header)); i++) {
+        if (i < CHECKSUM_START || i > CHECKSUM_END ) {
+            checksum += (unsigned char)(*ptr);
+            ptr++;
+        } else {
+            checksum += ' ';
+            ptr++;
+        }
+    }
+
+    return checksum;
+}
+
 // void create_archive(char *file_path, int outfile, int verbose) {
 //     /* loops through all the entries in the path 
 //     and writes them to the tar file */
 //     write_entry(file_path, outfile, verbose);
 // }
-
